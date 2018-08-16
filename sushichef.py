@@ -80,17 +80,13 @@ class PageParser:
         section_nodes = self.page.findAll(lambda tag: tag.name == "div" and tag.findChildren("h2", class_="color-blue"))
         for section_node in section_nodes:
             section = Section(section_node)
-            #print(section.title)
-            #print(section.description)
-            #for link in section.links():
-            #    print(link)
             yield section
 
     def write_videos(self):
         path = [DATA_DIR] + ["abdullah_videos"]
         path = build_path(path)
         for section in self.get_sections():
-            LOGGER.info(section.title)
+            LOGGER.info("* Section: {}".format(section.title))
             section.download(download=DOWNLOAD_VIDEOS, base_path=path)
             yield section.to_node()
             break
@@ -116,15 +112,16 @@ class Section:
         for li in ol.findAll("li"):
             a = li.find("a")
             yield a.text, a.attrs.get("href", "")
-            break
 
     def download(self, download=True, base_path=None):
-        for name, link in self.links():
-            youtube = YouTubeResource(link, name=name, lang=self.lang)
+        for i, (name, link) in enumerate(self.links(), 1):
+            LOGGER.info("  {}. Title: {}".format(i, name))
+            youtube = YouTubeResource(link, name=name, lang=self.lang, 
+                section_title=self.title)
             youtube.download(download, base_path)
             node = youtube.to_node()
             if node["source_id"] not in self.tree_nodes:
-                self.tree_nodes["source_id"] = node
+                self.tree_nodes[node["source_id"]] = node
 
     def to_node(self):
         topic_node = dict(
@@ -134,18 +131,20 @@ class Section:
             description=self.description,
             language=self.lang,
             license=LICENSE,
-            children=self.tree_nodes.values()
+            children=list(self.tree_nodes.values())
         )
         return topic_node
 
 
 class YouTubeResource(object):
-    def __init__(self, source_id, name=None, type_name="Youtube", lang="en", embeded=False):
-        LOGGER.info("Resource Type: "+type_name)
+    def __init__(self, source_id, name=None, type_name="Youtube", lang="ar", 
+            embeded=False, section_title=None):
+        LOGGER.info("    + Resource Type: {}".format(type_name))
         self.filename = None
         self.type_name = type_name
         self.filepath = None
         self.name = name
+        self.section_title = section_title
         if embeded is True:
             self.source_id = YouTubeResource.transform_embed(source_id)
         else:
@@ -178,7 +177,7 @@ class YouTubeResource(object):
                 'no_warnings': True,
                 'restrictfilenames':True,
                 'continuedl': True,
-                'quiet': False,
+                'quiet': True,
                 'format': "bestvideo[height<={maxheight}][ext=mp4]+bestaudio[ext=m4a]/best[height<={maxheight}][ext=mp4]".format(maxheight='480'),
                 'outtmpl': '{}/%(id)s'.format(download_to),
                 'noplaylist': False
@@ -215,16 +214,16 @@ class YouTubeResource(object):
             download is False:
             return
 
-        download_to = build_path([base_path, 'videos'])
+        download_to = build_path([base_path, 'videos', self.section_title])
         for i in range(4):
             try:
                 info = self.get_video_info(download_to=download_to, subtitles=False)
                 if info is not None:
-                    LOGGER.info("Video resolution: {}x{}".format(info.get("width", ""), info.get("height", "")))
+                    LOGGER.info("    + Video resolution: {}x{}".format(info.get("width", ""), info.get("height", "")))
                     self.filepath = os.path.join(download_to, "{}.mp4".format(info["id"]))
                     self.filename = info["title"]
                     if self.filepath is not None and os.stat(self.filepath).st_size == 0:
-                        LOGGER.info("Empty file")
+                        LOGGER.info("    + Empty file")
                         self.filepath = None
             except (ValueError, IOError, OSError, URLError, ConnectionResetError) as e:
                 LOGGER.info(e)
@@ -232,7 +231,7 @@ class YouTubeResource(object):
                 time.sleep(.8)
             except (youtube_dl.utils.DownloadError, youtube_dl.utils.ContentTooShortError,
                     youtube_dl.utils.ExtractorError, OSError) as e:
-                LOGGER.info("An error ocurred, may be the video is not available.")
+                LOGGER.info("     + An error ocurred, may be the video is not available.")
                 return
             except OSError:
                 return
@@ -308,10 +307,17 @@ class AbdullaheidChef(JsonTreeChef):
         if not if_file_exists(css) or not if_file_exists(js):
             LOGGER.info("Downloading styles")
             self.download_css_js()
-        self.scrape(args, options)
+        self.write_tree_to_json(self.scrape(args, options))
 
     def scrape(self, args, options):
         LANG = 'ar'
+        only_section = options.get('--only-section', None)
+        download_video = options.get('--download-video', "1")
+
+        if int(download_video) == 0:
+            global DOWNLOAD_VIDEOS
+            DOWNLOAD_VIDEOS = False
+
         global channel_tree
         channel_tree = dict(
                 source_domain=AbdullaheidChef.HOSTNAME,
@@ -326,8 +332,12 @@ class AbdullaheidChef(JsonTreeChef):
             )
 
         page_parser = PageParser(BASE_URL)
-        print(list(page_parser.write_videos()))
-        #page_parser.get_sections()
+        for section_node in page_parser.write_videos():
+            channel_tree["children"].append(section_node)
+        return channel_tree
+
+    def write_tree_to_json(self, channel_tree):
+        write_tree_to_json_tree(self.scrape_stage, channel_tree)
 
 
 # CLI
