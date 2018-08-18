@@ -76,20 +76,21 @@ class PageParser:
         if document is not None:
             return BeautifulSoup(document, 'html.parser') #html5lib
 
-    def get_sections(self):
+    def get_sections(self, from_i=0, to_i=None):
         section_nodes = self.page.findAll(lambda tag: tag.name == "div" and tag.findChildren("h2", class_="color-blue"))
-        for section_node in section_nodes:
-            section = Section(section_node)
-            yield section
+        to_i = len(section_nodes) + 1 if to_i is None else to_i
+        for i, section_node in enumerate(section_nodes, 1):
+            if from_i <= i < to_i:
+                section = Section(section_node)
+                yield section
 
-    def write_videos(self):
+    def write_videos(self, from_i=0, to_i=None):
         path = [DATA_DIR] + ["abdullah_videos"]
         path = build_path(path)
-        for section in self.get_sections():
+        for section in self.get_sections(from_i=from_i, to_i=to_i):
             LOGGER.info("* Section: {}".format(section.title))
             section.download(download=DOWNLOAD_VIDEOS, base_path=path)
             yield section.to_node()
-            break
 
 
 class Section:
@@ -114,17 +115,32 @@ class Section:
             yield a.text, a.attrs.get("href", "")
 
     def download(self, download=True, base_path=None):
-        for i, (name, link) in enumerate(self.links(), 1):
-            LOGGER.info("  {}. Title: {}".format(i, name))
-            youtube = YouTubeResource(link, name=name, lang=self.lang, 
-                section_title=self.title)
-            youtube.download(download, base_path)
-            node = youtube.to_node()
-            if node["source_id"] not in self.tree_nodes:
-                self.tree_nodes[node["source_id"]] = node
+        if self.is_curriculum():
+            curriculum = MathCurriculum()
+            curriculum_nodes = curriculum.nodes()
+            index_map = curriculum.index_map()
+            for i, (name, link) in enumerate(self.links(), 1):
+                name = "{}. {}".format(i, name)
+                LOGGER.info("  Title: {}".format(name))
+                topic_name = index_map[i]
+                youtube = YouTubeResource(link, name=name, lang=self.lang, 
+                    section_title=self.title)
+                youtube.download(download, base_path)
+                curriculum_nodes[topic_name]["children"].append(youtube.to_node())
+            self.tree_nodes = curriculum_nodes
+        else:
+            for i, (name, link) in enumerate(self.links(), 1):
+                name = "{}. {}".format(i, name)
+                LOGGER.info("  Title: {}".format(name))
+                youtube = YouTubeResource(link, name=name, lang=self.lang, 
+                    section_title=self.title)
+                youtube.download(download, base_path)
+                node = youtube.to_node()
+                if node is not None and node["source_id"] not in self.tree_nodes:
+                    self.tree_nodes[node["source_id"]] = node
 
-    def to_node(self):
-        topic_node = dict(
+    def digital_literacy_node(self):
+        return dict(
             kind=content_kinds.TOPIC,
             source_id=self.title,
             title=self.title,
@@ -133,7 +149,65 @@ class Section:
             license=LICENSE,
             children=list(self.tree_nodes.values())
         )
-        return topic_node
+
+    def saudi_national_curriculum(self):
+        return dict(
+            kind=content_kinds.TOPIC,
+            source_id=self.title,
+            title="رياضيات الصف السابع الأساسي: الجبر",
+            description=self.description,
+            language=self.lang,
+            license=LICENSE,
+            children=list(self.tree_nodes.values())
+        )
+
+    def is_curriculum(self):
+        curriculum = set(["رياضيات أول متوسط الفصل الأول"])
+        return self.title in curriculum
+
+    def to_node(self):
+        if self.is_curriculum():
+            return self.saudi_national_curriculum()
+        else:
+            return self.digital_literacy_node()
+
+
+class MathCurriculum:
+    def __init__(self):
+        self.index = [
+            [1,2,3,4,16], [5,6,7,8], [9,10,11], [12,13,14,15], [17,18,19,20],
+            [21,22], [23,24,25,26], [27, 28]
+        ]
+        self.titles = ["طرق حل المسألة"]
+        self.titles.append("القوى والأسس")
+        self.titles.append("التربيع والجذر التربيعي")
+        self.titles.append("ترتيب العمليات")
+        self.titles.append("المتغيرات والعبارات الجبرية")
+        self.titles.append("المعادلات الجبرية")
+        self.titles.append("خصائص الجبر")
+        self.titles.append("المتتابعات الحسابية")
+
+    def index_map(self):
+        index_map = {}
+        for index, title in zip(self.index, self.titles):
+            for i in index:
+                index_map[i] = title
+        return index_map
+
+    def nodes(self):
+        nodes = OrderedDict()
+        for title in self.titles:
+            node = dict(
+                kind=content_kinds.TOPIC,
+                source_id=title,
+                title=title,
+                description="",
+                language="ar",
+                license=LICENSE,
+                children=[]
+            )
+            nodes[title] = node
+        return nodes
 
 
 class YouTubeResource(object):
@@ -318,6 +392,22 @@ class AbdullaheidChef(JsonTreeChef):
             global DOWNLOAD_VIDEOS
             DOWNLOAD_VIDEOS = False
 
+        if only_section is None:
+            from_i = 0
+            to_i = None
+        else:
+            index = only_section.split(":")
+            if len(index) == 2:
+                if index[0] == "":
+                    from_i = 0
+                    to_i = int(index[1])
+                elif index[1] == "":
+                    from_i = int(index[0])
+                    to_i = None
+                else:
+                    index = map(int, index)
+                    from_i, to_i = index
+
         global channel_tree
         channel_tree = dict(
                 source_domain=AbdullaheidChef.HOSTNAME,
@@ -332,7 +422,7 @@ class AbdullaheidChef(JsonTreeChef):
             )
 
         page_parser = PageParser(BASE_URL)
-        for section_node in page_parser.write_videos():
+        for section_node in page_parser.write_videos(from_i=from_i, to_i=to_i):
             channel_tree["children"].append(section_node)
         return channel_tree
 
