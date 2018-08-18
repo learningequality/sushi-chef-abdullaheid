@@ -126,7 +126,9 @@ class Section:
                 youtube = YouTubeResource(link, name=name, lang=self.lang, 
                     section_title=self.title)
                 youtube.download(download, base_path)
-                curriculum_nodes[topic_name]["children"].append(youtube.to_node())
+                node = youtube.to_node()
+                if node is not None:
+                    curriculum_nodes[topic_name]["children"].append(node)
             self.tree_nodes = curriculum_nodes
         else:
             for i, (name, link) in enumerate(self.links(), 1):
