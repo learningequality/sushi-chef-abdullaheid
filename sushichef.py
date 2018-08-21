@@ -131,15 +131,18 @@ class Section:
                     curriculum_nodes[topic_name]["children"].append(node)
             self.tree_nodes = curriculum_nodes
         else:
-            for i, (name, link) in enumerate(self.links(), 1):
+            i = 1
+            for name, link in self.links():
                 name = "{}. {}".format(i, name)
                 LOGGER.info("  Title: {}".format(name))
                 youtube = YouTubeResource(link, name=name, lang=self.lang, 
                     section_title=self.title)
                 youtube.download(download, base_path)
                 node = youtube.to_node()
-                if node is not None and node["source_id"] not in self.tree_nodes:
-                    self.tree_nodes[node["source_id"]] = node
+                if node is not None:
+                    if node["source_id"] not in self.tree_nodes:
+                        self.tree_nodes[node["source_id"]] = node
+                        i += 1
 
     def digital_literacy_node(self):
         return dict(
@@ -216,6 +219,7 @@ class YouTubeResource(object):
     def __init__(self, source_id, name=None, type_name="Youtube", lang="ar", 
             embeded=False, section_title=None):
         LOGGER.info("    + Resource Type: {}".format(type_name))
+        LOGGER.info("    - URL: {}".format(source_id))
         self.filename = None
         self.type_name = type_name
         self.filepath = None
@@ -409,6 +413,9 @@ class AbdullaheidChef(JsonTreeChef):
                 else:
                     index = map(int, index)
                     from_i, to_i = index
+            elif len(index) == 1:
+                from_i = int(index[0])
+                to_i = from_i + 1
 
         global channel_tree
         channel_tree = dict(
