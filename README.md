@@ -35,11 +35,7 @@ into a format that can be imported into Kolibri Studio.
 
 ## Usage
 
-TODO: Explain how to run the Abdulla Eid Network (العربيّة) chef
-
-      export SOMEVAR=someval
-      ./script.py -v --option2 --kwoard="val"
-
+      ./sushichef.py -v --reset --token=".token"
 
 
 ## Description
