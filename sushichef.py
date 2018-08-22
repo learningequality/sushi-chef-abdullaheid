@@ -34,11 +34,11 @@ import youtube_dl
 BASE_URL = "http://www.abdullaheid.net/"
 
 DATA_DIR = "chefdata"
-COPYRIGHT_HOLDER = "Abdullaheid"
+COPYRIGHT_HOLDER = "Abdullah Eid Educational Network"
 LICENSE = get_license(licenses.SPECIAL_PERMISSIONS, 
         copyright_holder=COPYRIGHT_HOLDER,
         description="الحقوق متاحة لجميع الناس لغير الأغراض التجارية").as_dict()
-#COUNTER_TITLE_KEYS = defaultdict(int)
+AUTHOR = "Abdullah Eid"
 
 LOGGER = logging.getLogger()
 __logging_handler = logging.StreamHandler()
@@ -151,6 +151,7 @@ class Section:
             title=self.title,
             description=self.description,
             language=self.lang,
+            author=AUTHOR,
             license=LICENSE,
             children=list(self.tree_nodes.values())
         )
@@ -162,6 +163,7 @@ class Section:
             title="رياضيات الصف السابع الأساسي: الجبر",
             description=self.description,
             language=self.lang,
+            author=AUTHOR,
             license=LICENSE,
             children=list(self.tree_nodes.values())
         )
@@ -208,6 +210,7 @@ class MathCurriculum:
                 title=title,
                 description="",
                 language="ar",
+                author=AUTHOR,
                 license=LICENSE,
                 children=[]
             )
@@ -327,6 +330,7 @@ class YouTubeResource(object):
                 source_id=self.source_id,
                 title=self.name if self.name is not None else self.filename,
                 description='',
+                author=AUTHOR,
                 files=files,
                 language=self.lang,
                 license=LICENSE
@@ -422,9 +426,10 @@ class AbdullaheidChef(JsonTreeChef):
                 source_domain=AbdullaheidChef.HOSTNAME,
                 source_id=BASE_URL,
                 title=CHANNEL_NAME,
-                description="""لا يمكن لك أن تبني منزلاً بدون أساس, وكذلك هي بقية الأمور في الحياة, فكل شئ يبنى على أساس وأنت عزيزي المبرمج يجب عليك أن تبني علمك لأسس البرمجة على أساس قوي لكي يسهل عليك بعدها الخوض في معظم إن لم يكن كل المسائل البرمجية التي تمر عليك وتعمل عليها دون مشاكل تذكر, وللحصول على ذلك فلا تكن كالمستحي الذي ينتظر المعلومة لتأتي إليه ولا تكن كالمتكبر الذي يقف على جبل فيرى الناس صغاراً ويرونه صغيرا, اعد ترتيب أوراقك وابدأ بمنهجية ورتب وقتك وابدأ في بناء أساس قوي يجعلك بإذن الله قادر على أن تبني أقوى وأصعب البرامج دون توقف"""
+                description="""Abdullah Eid Network provides programming and coding courses on Java, Javascript DOM, Android, HTML, XMind, MySQL, PHP, Ajax, ASP.Net MVC. The last course this channel provides is on Algebra for 7th grade."""
 [:400], #400 UPPER LIMIT characters allowed 
-                thumbnail=None,
+                thumbnail="abdullahed_logo.jpg",
+                author=AUTHOR,
                 language=LANG,
                 children=[],
                 license=LICENSE,
