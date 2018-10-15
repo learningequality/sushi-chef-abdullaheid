@@ -424,7 +424,7 @@ class AbdullaheidChef(JsonTreeChef):
         global channel_tree
         channel_tree = dict(
                 source_domain=AbdullaheidChef.HOSTNAME,
-                source_id=BASE_URL,
+                source_id=CHANNEL_SOURCE_ID,
                 title=CHANNEL_NAME,
                 description="""Abdullah Eid Network provides programming and coding courses on Java, Javascript DOM, Android, HTML, XMind, MySQL, PHP, Ajax, ASP.Net MVC. The last course this channel provides is on Algebra for 7th grade."""
 [:400], #400 UPPER LIMIT characters allowed 
