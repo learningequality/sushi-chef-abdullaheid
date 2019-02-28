@@ -426,7 +426,7 @@ class AbdullaheidChef(JsonTreeChef):
                 source_domain=AbdullaheidChef.HOSTNAME,
                 source_id=CHANNEL_SOURCE_ID,
                 title=CHANNEL_NAME,
-                description="""Abdullah Eid Network provides programming and coding courses on Java, Javascript DOM, Android, HTML, XMind, MySQL, PHP, Ajax, ASP.Net MVC. The last course this channel provides is on Algebra for 7th grade."""
+                description="""شبكة عبد الله عيد هي شبكة سعودية تزود المهتمين من المتعلمين الكبار وفي المرحلة الثانوية المهتمين بالبرمجة بمجموعة من الدورات المختلفة في استخدام أنظمة جافا و HTML و الأندرويد وتطبيقات الأندرويد و XMinds و جافا سكربت دوم وغيرها. تتلاءم الكثير من هذه الدروس مع مناهج الدراسات العليا لكثير من الجامعات العربية كما أنّ البعض منها ملائم للمرحلة الثانوية. وهناك في النهاية مجموعة من الدروس في علم الجبر لمتعلمي المرحلة"""
 [:400], #400 UPPER LIMIT characters allowed 
                 thumbnail="abdullahed_logo.jpg",
                 author=AUTHOR,
